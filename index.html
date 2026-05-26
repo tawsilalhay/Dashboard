@@ -426,9 +426,21 @@ function renderStores(){
       +'<div class="store-stat"><div class="store-stat-num">'+comm+'</div><div class="store-stat-label">عمولة (ر)</div></div>'
       +'<div class="store-stat"><div class="store-stat-num">'+(info.commission||0)+'%</div><div class="store-stat-label">نسبة</div></div>'
       +'</div>'
+      // Ratings summary
+      +function(){
+        var rats=Object.values(allRatingsByStore[sid]||{});
+        if(!rats.length) return '';
+        var sum=rats.reduce(function(s,r){return s+(r.stars||0);},0);
+        var avg=(sum/rats.length).toFixed(1);
+        var fs=Math.round(parseFloat(avg));
+        return '<div style="background:rgba(201,168,76,.08);border-radius:8px;padding:6px 10px;margin-bottom:8px;display:flex;align-items:center;gap:8px">'
+          +'<span style="color:#C9A84C;font-size:14px">'+'★'.repeat(fs)+'☆'.repeat(5-fs)+'</span>'
+          +'<span style="font-size:12px;color:#C9A84C;font-weight:700">'+avg+'</span>'
+          +'<span style="font-size:11px;color:#64748b">('+rats.length+' تقييم)</span></div>';
+      }()
       +'<div class="store-actions">'
       +'<button class="act-btn '+(isOpen?'act-red':'act-green')+' toggle-store-btn" data-sid="'+sid+'" data-status="'+info.status+'">'+(isOpen?'إيقاف':'تفعيل')+'</button>'
-      +(info.visible===false?'<button class="act-btn act-blue toggle-visible-btn" data-sid="'+sid+'" data-visible="false">👁 إظهار</button>':'<button class="act-btn act-gold toggle-visible-btn" data-sid="'+sid+'" data-visible="true">🙈 إخفاء</button>')
+      +(info.visible===false?'<button class="act-btn act-blue toggle-visible-btn" data-sid="'+sid+'" data-visible="false">إظهار</button>':'<button class="act-btn act-gold toggle-visible-btn" data-sid="'+sid+'" data-visible="true">إخفاء</button>')
       +'<button class="act-btn act-gold edit-store-btn" data-sid="'+sid+'">تعديل</button>'
       +'<button class="act-btn act-red del-store-btn" data-sid="'+sid+'">حذف</button>'
       +'</div></div>';
@@ -533,6 +545,7 @@ function setIncomeQuick(mode){
   if(mode!=='all') incomeTo=Date.now();
   renderIncome();
 }
+function getPayLabel(m){var pl={apple_pay:'Apple Pay',mada:'مدى',cash:'كاش/شبكة'};return pl[m]||m||'-';}
 function renderIncome(){
   var all=getAllOrders().filter(function(x){
     if(x.order.status!=='delivered') return false;
@@ -559,10 +572,27 @@ function renderIncome(){
     var info=(allStores[sid]||{}).info||{name:sid};
     var d=storeInc[sid];
     var comm=Math.round(d.income*(info.commission||0)/100);
-    html+='<div class="comm-row"><div><div style="font-weight:700">'+san(info.emoji||'🏪')+' '+san(info.name)+'</div>'
-      +'<div style="font-size:11px;color:#64748b">'+d.orders+' طلب | عمولة '+(info.commission||0)+'%</div></div>'
-      +'<div style="text-align:left"><div class="comm-amount">'+d.income+' ر</div>'
-      +'<div style="font-size:11px;color:#64748b">'+comm+' ر عمولة</div></div></div>';
+    // breakdown by type and payment
+    var delivery=0,pickup=0;
+    var payCount={};
+    (all.filter(function(x){return x.storeId===sid;})).forEach(function(x){
+      var o=x.order;
+      if(o.orderType==='pickup') pickup+=o.total||0; else delivery+=o.total||0;
+      var pm=o.payMethod||'other';
+      payCount[pm]=(payCount[pm]||0)+1;
+    });
+    var payStr=Object.keys(payCount).map(function(k){return getPayLabel(k)+': '+payCount[k];}).join(' | ');
+    html+='<div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      +'<div style="font-weight:700;font-size:14px">'+san(info.emoji||'🏪')+' '+san(info.name)+'</div>'
+      +'<div class="comm-amount">'+d.income+' ر</div></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#64748b;margin-bottom:6px">'
+      +'<span>📦 '+d.orders+' طلب</span>'
+      +(delivery?'<span>🛵 توصيل: '+delivery+' ر</span>':'')
+      +(pickup?'<span>🏪 استلام: '+pickup+' ر</span>':'')
+      +'<span>عمولة '+(info.commission||0)+'%: '+comm+' ر</span></div>'
+      +(payStr?'<div style="font-size:11px;color:#888">'+payStr+'</div>':'')
+      +'</div>';
   });
   sl.innerHTML=html||'<div class="empty-state">لا توجد بيانات</div>';
 }
