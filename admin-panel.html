@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>توصيل الحي - لوحة التحكم</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction:rtl;color:#eee;min-height:100vh}
+.app{max-width:600px;margin:0 auto;min-height:100vh}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:#1e293b;border-radius:20px;padding:32px 24px;width:100%;max-width:380px;border:1px solid rgba(255,255,255,.1);text-align:center}
+.login-logo{font-size:48px;margin-bottom:8px}
+.login-title{font-size:22px;font-weight:800;color:#C9A84C;margin-bottom:4px}
+.login-sub{font-size:13px;color:#888;margin-bottom:24px}
+.login-input{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:#0f172a;color:#fff;font-family:inherit;font-size:16px;outline:none;margin-bottom:10px;text-align:center}
+.login-input:focus{border-color:#C9A84C}
+.check-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}
+.check-row input{width:16px;height:16px;accent-color:#C9A84C;cursor:pointer}
+.check-row label{color:#888;font-size:13px;cursor:pointer}
+.login-btn{width:100%;padding:14px;background:#C9A84C;color:#1A0A00;border:none;border-radius:12px;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+.login-err{display:none;margin-top:12px;background:#dc2626;color:#fff;border-radius:10px;padding:10px;font-size:13px;font-weight:700}
+.hdr{background:linear-gradient(135deg,#2D5016,#1a3a0a);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.hdr-title{font-size:17px;font-weight:800;color:#fff}
+.hdr-sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px}
+.logout-btn{background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.nav-tabs{display:flex;background:#1e293b;border-bottom:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{flex:1;padding:11px 4px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;white-space:nowrap;min-width:70px}
+.nav-tab.active{color:#C9A84C;border-bottom-color:#C9A84C}
+.panel{padding:14px 12px;display:flex;flex-direction:column;gap:12px}
+.card{background:#1e293b;border-radius:14px;border:1px solid rgba(255,255,255,.08);padding:16px}
+.card-title{font-size:14px;font-weight:800;color:#C9A84C;margin-bottom:14px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-box{background:#0f172a;border-radius:12px;padding:14px 12px;text-align:center;border:1px solid rgba(255,255,255,.06)}
+.stat-num{font-size:28px;font-weight:800;color:#C9A84C}
+.stat-label{font-size:11px;color:#64748b;margin-top:4px}
+/* STORE CARD */
+.store-card{background:#0f172a;border-radius:12px;border:1px solid rgba(255,255,255,.08);padding:14px;margin-bottom:10px}
+.store-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.store-logo{width:44px;height:44px;border-radius:10px;object-fit:cover;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.store-info{flex:1;margin-right:10px}
+.store-name{font-size:15px;font-weight:800;color:#fff}
+.store-type{font-size:11px;color:#64748b;margin-top:2px}
+.store-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-open{background:#d1fae5;color:#065f46}
+.badge-closed{background:#fee2e2;color:#991b1b}
+.store-stats{display:flex;gap:8px;margin:10px 0}
+.store-stat{flex:1;background:#1e293b;border-radius:8px;padding:8px;text-align:center}
+.store-stat-num{font-size:15px;font-weight:800;color:#C9A84C}
+.store-stat-label{font-size:10px;color:#64748b;margin-top:2px}
+.store-creds{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px;color:#C9A84C}
+.store-actions{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{padding:8px 12px;border-radius:8px;border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.act-green{background:#2D5016;color:#fff}
+.act-red{background:rgba(220,38,38,.15);color:#f87171;border:1px solid rgba(220,38,38,.3)}
+.act-gold{background:rgba(201,168,76,.15);color:#C9A84C;border:1px solid rgba(201,168,76,.3)}
+.act-blue{background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3)}
+/* FORM */
+.f-label{font-size:12px;color:#94a3b8;font-weight:700;margin-bottom:5px;display:block;margin-top:12px}
+.f-input{width:100%;padding:10px 13px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:#0f172a;color:#fff;font-family:inherit;font-size:14px;outline:none}
+.f-input:focus{border-color:#C9A84C}
+.f-select{width:100%;padding:10px 13px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:#0f172a;color:#fff;font-family:inherit;font-size:14px;outline:none}
+.logo-preview{width:80px;height:80px;border-radius:12px;object-fit:cover;margin:8px auto;display:block;background:rgba(255,255,255,.05)}
+.logo-upload-btn{display:block;text-align:center;padding:8px;border:1.5px dashed rgba(255,255,255,.2);border-radius:8px;cursor:pointer;font-size:13px;color:#666;margin-top:6px}
+.save-btn{background:#2D5016;color:#fff;border:none;border-radius:10px;padding:12px;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;width:100%;margin-top:14px}
+.cancel-btn{background:rgba(255,255,255,.08);color:#aaa;border:none;border-radius:10px;padding:10px;font-family:inherit;font-size:13px;cursor:pointer;width:100%;margin-top:6px}
+.add-btn{background:#C9A84C;color:#1A0A00;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer}
+/* ORDERS */
+.order-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.order-row:last-child{border-bottom:none}
+.order-id{font-size:13px;font-weight:800;color:#C9A84C}
+.order-badge{padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700}
+.b-pending{background:#fef3c7;color:#92400e}
+.b-accepted{background:#d1fae5;color:#065f46}
+.b-on_the_way{background:#d0f0c0;color:#1a5c1a}
+.b-delivered{background:#e0e7ff;color:#3730a3}
+.b-rejected{background:#fee2e2;color:#991b1b}
+/* CHART */
+.chart-wrap{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:10px}
+.chart-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:3px}
+.chart-bar{background:#C9A84C;border-radius:4px 4px 0 0;width:100%;min-height:4px}
+.chart-lbl{font-size:9px;color:#64748b}
+.chart-val{font-size:10px;color:#C9A84C;font-weight:700}
+/* MISC */
+.comm-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}
+.comm-row:last-child{border-bottom:none}
+.comm-amount{font-weight:800;color:#C9A84C}
+.empty-state{text-align:center;padding:30px;color:#475569;font-size:13px}
+.notif-pop{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#C9A84C;color:#1A0A00;padding:12px 24px;border-radius:12px;font-weight:800;font-size:13px;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.quick-btns{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap}
+.quick-btn{padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#aaa;font-family:inherit;font-size:11px;cursor:pointer}
+.quick-btn.active{background:#C9A84C;color:#1A0A00;border-color:#C9A84C;font-weight:700}
+.store-form-wrap{background:#1e293b;border-radius:14px;border:1px solid rgba(255,255,255,.1);padding:16px;margin-top:10px;display:none}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">🛵</div>
+      <div class="login-title">توصيل الحي</div>
+      <div class="login-sub">لوحة تحكم المنصة — omar</div>
+      <input type="password" class="login-input" id="pass-input" placeholder="كلمة المرور" autocomplete="current-password">
+      <div class="check-row">
+        <input type="checkbox" id="show-pass">
+        <label for="show-pass">إظهار كلمة المرور</label>
+      </div>
+      <div class="check-row">
+        <input type="checkbox" id="remember-me">
+        <label for="remember-me">تذكرني</label>
+      </div>
+      <button class="login-btn" id="login-btn">دخول</button>
+      <div class="login-err" id="login-err">❌ كلمة المرور خاطئة</div>
+    </div>
+  </div>
+</div>
+
+<div id="main-app" class="app" style="display:none">
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">🛵 توصيل الحي</div>
+      <div class="hdr-sub" id="conn-label">جاري الاتصال...</div>
+    </div>
+    <button class="logout-btn" id="logout-btn">خروج</button>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="overview">الرئيسية</div>
+    <div class="nav-tab" data-tab="stores">المتاجر</div>
+    <div class="nav-tab" data-tab="orders">الطلبات</div>
+    <div class="nav-tab" data-tab="income">الدخل</div>
+    <div class="nav-tab" data-tab="ratings">التقييمات</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="panel-overview" class="panel">
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-num" id="ov-stores">0</div><div class="stat-label">المتاجر</div></div>
+      <div class="stat-box"><div class="stat-num" id="ov-orders">0</div><div class="stat-label">إجمالي الطلبات</div></div>
+      <div class="stat-box"><div class="stat-num" id="ov-income">0</div><div class="stat-label">إجمالي الدخل (ر)</div></div>
+      <div class="stat-box"><div class="stat-num" id="ov-today">0</div><div class="stat-label">طلبات اليوم</div></div>
+    </div>
+    <div class="card"><div class="card-title">📊 آخر 7 أيام</div><div class="chart-wrap" id="week-chart"></div></div>
+    <div class="card"><div class="card-title">🔄 حالة الطلبات</div><div id="status-bd"></div></div>
+    <div class="card"><div class="card-title">⭐ متوسط التقييمات</div>
+      <div style="text-align:center;padding:10px">
+        <div style="font-size:36px;font-weight:800;color:#C9A84C" id="ov-avg">-</div>
+        <div style="color:#C9A84C;font-size:18px" id="ov-stars"></div>
+        <div style="font-size:12px;color:#64748b" id="ov-rcount">0 تقييم</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STORES -->
+  <div id="panel-stores" style="display:none" class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:16px;font-weight:800;color:#C9A84C">المتاجر</span>
+      <button class="add-btn" id="add-store-btn">+ إضافة متجر</button>
+    </div>
+
+    <!-- STORE FORM -->
+    <div class="store-form-wrap" id="store-form">
+      <div class="card-title" id="store-form-title">إضافة متجر جديد</div>
+
+      <label class="f-label">اسم المتجر *</label>
+      <input class="f-input" id="sf-name" placeholder="مثال: نسيم كافي">
+
+      <label class="f-label">النوع / التخصص</label>
+      <input class="f-input" id="sf-type" placeholder="قهوة مختصة، وجبات سريعة...">
+
+      <label class="f-label">إيموجي المتجر</label>
+      <input class="f-input" id="sf-emoji" placeholder="☕" style="font-size:22px;text-align:center">
+
+      <label class="f-label">شعار المتجر (اختياري)</label>
+      <img id="sf-logo-preview" class="logo-preview" src="" style="display:none">
+      <label class="logo-upload-btn" for="sf-logo-file">📷 اضغط لرفع الشعار</label>
+      <input type="file" id="sf-logo-file" accept="image/*" style="display:none">
+
+      <label class="f-label">اسم المستخدم (للمطعم) *</label>
+      <input class="f-input" id="sf-username" placeholder="مثال: naseem" style="direction:ltr;text-align:left">
+
+      <label class="f-label">كلمة المرور (للمطعم) *</label>
+      <input class="f-input" id="sf-password" placeholder="كلمة مرور قوية" style="direction:ltr;text-align:left">
+
+      <label class="f-label">نسبة العمولة %</label>
+      <input class="f-input" id="sf-commission" type="number" min="0" max="100" placeholder="0">
+
+      <label class="f-label">الحالة</label>
+      <select class="f-select" id="sf-status" style="margin-top:5px">
+        <option value="open">مفتوح</option>
+        <option value="closed">مغلق</option>
+      </select>
+
+      <button class="save-btn" id="save-store-btn">حفظ المتجر</button>
+      <button class="cancel-btn" id="cancel-store-btn">إلغاء</button>
+    </div>
+
+    <div id="stores-list"></div>
+  </div>
+
+  <!-- ORDERS -->
+  <div id="panel-orders" style="display:none" class="panel">
+    <div class="card">
+      <div class="card-title">📋 جميع الطلبات</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="act-btn act-blue active-filter" data-filter="all">الكل</button>
+        <button class="act-btn" data-filter="pending" style="background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.3)">انتظار</button>
+        <button class="act-btn" data-filter="accepted" style="background:rgba(52,211,153,.1);color:#34d399;border:1px solid rgba(52,211,153,.3)">تجهيز</button>
+        <button class="act-btn" data-filter="delivered" style="background:rgba(99,102,241,.1);color:#a5b4fc;border:1px solid rgba(99,102,241,.3)">مُسلَّم</button>
+      </div>
+      <div id="all-orders-list"></div>
+    </div>
+  </div>
+
+  <!-- INCOME -->
+  <div id="panel-income" style="display:none" class="panel">
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-num" id="inc-total">0</div><div class="stat-label">إجمالي الدخل (ر)</div></div>
+      <div class="stat-box"><div class="stat-num" id="inc-comm">0</div><div class="stat-label">عمولات المنصة (ر)</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">💰 دخل كل متجر</div>
+      <div class="quick-btns">
+        <button class="quick-btn active" data-quick="all">الكل</button>
+        <button class="quick-btn" data-quick="today">اليوم</button>
+        <button class="quick-btn" data-quick="week">الأسبوع</button>
+        <button class="quick-btn" data-quick="month">الشهر</button>
+      </div>
+      <div id="store-income-list"></div>
+    </div>
+  </div>
+
+  <!-- RATINGS -->
+  <div id="panel-ratings" style="display:none" class="panel">
+    <div class="card">
+      <div class="card-title">⭐ جميع التقييمات</div>
+      <div id="all-ratings-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="notif-pop" class="notif-pop"></div>
+
+<script>
+var ADMIN_PASS='1234';
+var FB={
+  apiKey:'AIzaSyCY31rq2Z608u7O6iFzE6',
+  authDomain:'twsilya.firebaseapp.com',
+  databaseURL:'https://twsilya-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId:'twsilya',
+  storageBucket:'twsilya.firebasestorage.app',
+  messagingSenderId:'191977779172',
+  appId:'1:191977779172:web:9297f1be500b4d1cc8e1f1'
+};
+
+var db=null;
+var allStores={};
+var allOrdersByStore={};
+var allRatingsByStore={};
+var editingStoreId=null;
+var newStoreLogo=null;
+var orderFilter='all';
+var incomeQuick='all';
+var incomeFrom=null,incomeTo=null;
+var activeTab='overview';
+
+var OL={pending:'انتظار',accepted:'تجهيز',on_the_way:'في الطريق',delivered:'مُسلَّم',rejected:'مرفوض'};
+var OC={pending:'b-pending',accepted:'b-accepted',on_the_way:'b-on_the_way',delivered:'b-delivered',rejected:'b-rejected'};
+
+function san(s){if(!s)return '';return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtT(ts){if(!ts)return '';var d=new Date(ts);return d.toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});}
+function todayStart(){var d=new Date();d.setHours(0,0,0,0);return d.getTime();}
+function notif(msg){var el=document.getElementById('notif-pop');el.textContent=msg;el.style.display='block';setTimeout(function(){el.style.display='none';},3000);}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+
+// ── FIREBASE ──
+function initFirebase(){
+  if(db) return;
+  try{
+    var app=(firebase.apps&&firebase.apps.length>0)?firebase.apps[0]:firebase.initializeApp(FB);
+    db=firebase.database();
+    db.ref('.info/connected').on('value',function(s){
+      var el=document.getElementById('conn-label');
+      if(el) el.textContent=s.val()===true?'متصل':'يعيد الاتصال...';
+    });
+    // Listen to all stores
+    db.ref('stores').on('value',function(snap){
+      allStores=snap.val()||{};
+      // Load orders and ratings for each store
+      allOrdersByStore={};allRatingsByStore={};
+      var storeIds=Object.keys(allStores);
+      if(!storeIds.length){renderAll();return;}
+      var loaded=0;
+      storeIds.forEach(function(sid){
+        // orders
+        db.ref('stores/'+sid+'/orders').on('value',function(s){
+          allOrdersByStore[sid]=s.val()||{};
+          renderAll();
+        });
+        // ratings
+        db.ref('stores/'+sid+'/ratings').on('value',function(s){
+          allRatingsByStore[sid]=s.val()||{};
+          renderAll();
+        });
+      });
+    });
+    // Restore tab
+    try{var t=localStorage.getItem('admin_tab');if(t) switchTab(t);}catch(e){}
+  }catch(e){
+    var el=document.getElementById('conn-label');
+    if(el) el.textContent='خطأ في الاتصال';
+  }
+}
+
+function renderAll(){
+  renderOverview();
+  if(activeTab==='stores') renderStores();
+  if(activeTab==='orders') renderOrders();
+  if(activeTab==='income') renderIncome();
+  if(activeTab==='ratings') renderRatings();
+}
+
+// get all orders flat
+function getAllOrders(){
+  var all=[];
+  Object.keys(allOrdersByStore).forEach(function(sid){
+    var ords=allOrdersByStore[sid];
+    Object.keys(ords).forEach(function(oid){
+      all.push({id:oid,storeId:sid,storeName:(allStores[sid]&&allStores[sid].info?allStores[sid].info.name:sid),order:ords[oid]});
+    });
+  });
+  return all;
+}
+function getAllRatings(){
+  var all=[];
+  Object.keys(allRatingsByStore).forEach(function(sid){
+    var rats=allRatingsByStore[sid];
+    Object.keys(rats).forEach(function(rid){all.push({id:rid,storeId:sid,r:rats[rid]});});
+  });
+  return all;
+}
+
+// ── OVERVIEW ──
+function renderOverview(){
+  var storeIds=Object.keys(allStores);
+  var allOrds=getAllOrders();
+  var today=todayStart();
+  var totalIncome=0,todayOrds=0;
+  var sc={pending:0,accepted:0,on_the_way:0,delivered:0,rejected:0};
+  allOrds.forEach(function(item){
+    var o=item.order;
+    if(o.status==='delivered') totalIncome+=o.total||0;
+    if((o.createdAt||0)>=today) todayOrds++;
+    if(sc[o.status]!==undefined) sc[o.status]++;else sc.pending++;
+  });
+  document.getElementById('ov-stores').textContent=storeIds.length;
+  document.getElementById('ov-orders').textContent=allOrds.length;
+  document.getElementById('ov-income').textContent=totalIncome;
+  document.getElementById('ov-today').textContent=todayOrds;
+
+  // status breakdown
+  var sbHtml='';
+  var scColors={pending:'#fbbf24',accepted:'#34d399',on_the_way:'#60a5fa',delivered:'#a78bfa',rejected:'#f87171'};
+  Object.keys(sc).forEach(function(st){
+    if(!sc[st]) return;
+    sbHtml+='<div class="comm-row"><span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:'+scColors[st]+';display:inline-block"></span>'+(OL[st]||st)+'</span><span class="comm-amount">'+sc[st]+'</span></div>';
+  });
+  document.getElementById('status-bd').innerHTML=sbHtml||'<div class="empty-state">لا توجد طلبات</div>';
+
+  // week chart
+  var days=[];
+  for(var i=6;i>=0;i--){
+    var d=new Date();d.setDate(d.getDate()-i);d.setHours(0,0,0,0);
+    var dE=new Date(d);dE.setHours(23,59,59,999);
+    var cnt=allOrds.filter(function(x){var t=x.order.createdAt||0;return t>=d.getTime()&&t<=dE.getTime();}).length;
+    var dn=['أح','إث','ثل','أر','خم','جم','سب'];
+    days.push({l:dn[d.getDay()],c:cnt});
+  }
+  var mx=Math.max.apply(null,days.map(function(d){return d.c;}));
+  var ch='';
+  days.forEach(function(d){
+    var h=mx>0?Math.max(Math.round((d.c/mx)*70),d.c>0?6:0):0;
+    ch+='<div class="chart-col"><div class="chart-val">'+(d.c||'')+'</div><div class="chart-bar" style="height:'+h+'px"></div><div class="chart-lbl">'+d.l+'</div></div>';
+  });
+  document.getElementById('week-chart').innerHTML=ch;
+
+  // ratings
+  var allRats=getAllRatings();
+  if(allRats.length){
+    var sum=allRats.reduce(function(s,x){return s+(x.r.stars||0);},0);
+    var avg=(sum/allRats.length).toFixed(1);
+    document.getElementById('ov-avg').textContent=avg;
+    var fs=Math.round(parseFloat(avg));
+    document.getElementById('ov-stars').textContent='★'.repeat(fs)+'☆'.repeat(5-fs);
+    document.getElementById('ov-rcount').textContent=allRats.length+' تقييم';
+  }
+}
+
+// ── STORES ──
+function renderStores(){
+  var el=document.getElementById('stores-list');
+  var ids=Object.keys(allStores);
+  if(!ids.length){el.innerHTML='<div class="empty-state">لا توجد متاجر — أضف متجراً جديداً</div>';return;}
+  var html='';
+  ids.forEach(function(sid){
+    var s=allStores[sid]||{};
+    var info=s.info||{};
+    var storeOrds=Object.values(allOrdersByStore[sid]||{});
+    var storeIncome=storeOrds.reduce(function(t,o){return t+(o.status==='delivered'?o.total||0:0);},0);
+    var comm=Math.round(storeIncome*(info.commission||0)/100);
+    var isOpen=info.status==='open';
+    var logoHtml=info.logo?'<img src="'+info.logo+'" class="store-logo">':'<div class="store-logo">'+san(info.emoji||'🏪')+'</div>';
+    html+='<div class="store-card">'
+      +'<div class="store-header"><div style="display:flex;align-items:center;gap:10px">'+logoHtml
+      +'<div class="store-info"><div class="store-name">'+san(info.name||sid)+'</div><div class="store-type">'+san(info.type||'')+'</div></div></div>'
+      +'<span class="store-badge '+(isOpen?'badge-open':'badge-closed')+'">'+(isOpen?'مفتوح':'مغلق')+'</span>'
+      +(info.visible===false?'<span style="background:#475569;color:#fff;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-right:4px">مخفي</span>':'')
+      +'</div>'
+      +'<div class="store-creds">👤 '+san(info.username||'')+'  🔑 '+san(info.password||'')+'</div>'
+      +'<div class="store-stats">'
+      +'<div class="store-stat"><div class="store-stat-num">'+storeOrds.length+'</div><div class="store-stat-label">طلبات</div></div>'
+      +'<div class="store-stat"><div class="store-stat-num">'+storeIncome+'</div><div class="store-stat-label">دخل (ر)</div></div>'
+      +'<div class="store-stat"><div class="store-stat-num">'+comm+'</div><div class="store-stat-label">عمولة (ر)</div></div>'
+      +'<div class="store-stat"><div class="store-stat-num">'+(info.commission||0)+'%</div><div class="store-stat-label">نسبة</div></div>'
+      +'</div>'
+      +'<div class="store-actions">'
+      +'<button class="act-btn '+(isOpen?'act-red':'act-green')+' toggle-store-btn" data-sid="'+sid+'" data-status="'+info.status+'">'+(isOpen?'إيقاف':'تفعيل')+'</button>'
+      +(info.visible===false?'<button class="act-btn act-blue toggle-visible-btn" data-sid="'+sid+'" data-visible="false">👁 إظهار</button>':'<button class="act-btn act-gold toggle-visible-btn" data-sid="'+sid+'" data-visible="true">🙈 إخفاء</button>')
+      +'<button class="act-btn act-gold edit-store-btn" data-sid="'+sid+'">تعديل</button>'
+      +'<button class="act-btn act-red del-store-btn" data-sid="'+sid+'">حذف</button>'
+      +'</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+function showStoreForm(storeId){
+  editingStoreId=storeId||null;
+  newStoreLogo=null;
+  var s=storeId?(allStores[storeId]||{}):{};
+  var info=s.info||{};
+  document.getElementById('store-form-title').textContent=storeId?'تعديل: '+info.name:'إضافة متجر جديد';
+  document.getElementById('sf-name').value=info.name||'';
+  document.getElementById('sf-type').value=info.type||'';
+  document.getElementById('sf-emoji').value=info.emoji||'';
+  document.getElementById('sf-username').value=info.username||'';
+  document.getElementById('sf-password').value=info.password||'';
+  document.getElementById('sf-commission').value=info.commission||0;
+  document.getElementById('sf-status').value=info.status||'open';
+  var lp=document.getElementById('sf-logo-preview');
+  if(info.logo){lp.src=info.logo;lp.style.display='block';}else{lp.style.display='none';}
+  document.getElementById('store-form').style.display='block';
+  document.getElementById('store-form').scrollIntoView({behavior:'smooth'});
+}
+function hideStoreForm(){document.getElementById('store-form').style.display='none';editingStoreId=null;newStoreLogo=null;}
+
+function compressImg(file,cb){
+  var r=new FileReader();r.onload=function(e){
+    var img=new Image();img.onload=function(){
+      var c=document.createElement('canvas');
+      var MAX=400,w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+      cb(c.toDataURL('image/jpeg',0.7));
+    };img.src=e.target.result;
+  };r.readAsDataURL(file);
+}
+
+function saveStore(){
+  var name=document.getElementById('sf-name').value.trim();
+  var username=document.getElementById('sf-username').value.trim();
+  var password=document.getElementById('sf-password').value.trim();
+  if(!name){alert('أدخل اسم المتجر');return;}
+  if(!username||!password){alert('أدخل اسم المستخدم وكلمة المرور');return;}
+  // Check username uniqueness
+  var ids=Object.keys(allStores);
+  var duplicate=ids.some(function(sid){
+    if(sid===editingStoreId) return false;
+    var info=(allStores[sid]||{}).info||{};
+    return info.username===username;
+  });
+  if(duplicate){alert('اسم المستخدم مستخدم بالفعل — اختر اسماً آخر');return;}
+
+  var info={
+    name:name,
+    type:document.getElementById('sf-type').value.trim(),
+    emoji:document.getElementById('sf-emoji').value.trim()||'🏪',
+    username:username,
+    password:password,
+    commission:parseFloat(document.getElementById('sf-commission').value)||0,
+    status:document.getElementById('sf-status').value,
+    logo:newStoreLogo||(editingStoreId&&allStores[editingStoreId]&&allStores[editingStoreId].info?allStores[editingStoreId].info.logo||null:null)
+  };
+  var id=editingStoreId||genId();
+  db.ref('stores/'+id+'/info').set(info,function(err){
+    if(err){alert('خطأ في الحفظ');return;}
+    notif(editingStoreId?'تم تعديل المتجر ✅':'تم إضافة المتجر ✅');
+    hideStoreForm();
+  });
+}
+
+// ── ORDERS ──
+function renderOrders(){
+  var el=document.getElementById('all-orders-list');if(!el) return;
+  var all=getAllOrders();
+  if(orderFilter!=='all') all=all.filter(function(x){return x.order.status===orderFilter;});
+  all.sort(function(a,b){return (b.order.createdAt||0)-(a.order.createdAt||0);});
+  if(!all.length){el.innerHTML='<div class="empty-state">لا توجد طلبات</div>';return;}
+  var html='';
+  all.slice(0,60).forEach(function(item){
+    var o=item.order;
+    html+='<div class="order-row"><div><div class="order-id">#'+item.id.slice(-4).toUpperCase()+'</div>'
+      +'<div style="font-size:11px;color:#64748b">'+san(item.storeName)+'</div>'
+      +'<div style="font-size:11px;color:#64748b">'+san(o.customerName||o.name||'')+'</div>'
+      +'<div style="font-size:10px;color:#475569">'+fmtT(o.createdAt)+'</div></div>'
+      +'<div style="text-align:center"><div class="order-badge '+(OC[o.status]||'b-pending')+'">'+(OL[o.status||'pending'])+'</div>'
+      +'<div style="font-size:13px;font-weight:700;margin-top:4px">'+(o.total||0)+' ر</div></div></div>';
+  });
+  if(all.length>60) html+='<div class="empty-state">... و '+(all.length-60)+' طلب آخر</div>';
+  el.innerHTML=html;
+}
+
+// ── INCOME ──
+function setIncomeQuick(mode){
+  incomeQuick=mode;
+  document.querySelectorAll('[data-quick]').forEach(function(b){b.classList.toggle('active',b.dataset.quick===mode);});
+  var now=new Date();incomeFrom=null;incomeTo=null;
+  if(mode==='today') incomeFrom=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  else if(mode==='week') incomeFrom=new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay()).getTime();
+  else if(mode==='month') incomeFrom=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+  if(mode!=='all') incomeTo=Date.now();
+  renderIncome();
+}
+function renderIncome(){
+  var all=getAllOrders().filter(function(x){
+    if(x.order.status!=='delivered') return false;
+    if(incomeFrom&&(x.order.createdAt||0)<incomeFrom) return false;
+    if(incomeTo&&(x.order.createdAt||0)>incomeTo) return false;
+    return true;
+  });
+  var total=all.reduce(function(s,x){return s+(x.order.total||0);},0);
+  var totalComm=0;
+  var storeInc={};
+  all.forEach(function(x){
+    var sid=x.storeId;
+    if(!storeInc[sid]) storeInc[sid]={income:0,orders:0};
+    storeInc[sid].income+=x.order.total||0;
+    storeInc[sid].orders++;
+    var info=(allStores[sid]||{}).info||{};
+    totalComm+=Math.round((x.order.total||0)*(info.commission||0)/100);
+  });
+  var ti=document.getElementById('inc-total');var tc=document.getElementById('inc-comm');
+  if(ti) ti.textContent=total;if(tc) tc.textContent=totalComm;
+  var sl=document.getElementById('store-income-list');if(!sl) return;
+  var html='';
+  Object.keys(storeInc).forEach(function(sid){
+    var info=(allStores[sid]||{}).info||{name:sid};
+    var d=storeInc[sid];
+    var comm=Math.round(d.income*(info.commission||0)/100);
+    html+='<div class="comm-row"><div><div style="font-weight:700">'+san(info.emoji||'🏪')+' '+san(info.name)+'</div>'
+      +'<div style="font-size:11px;color:#64748b">'+d.orders+' طلب | عمولة '+(info.commission||0)+'%</div></div>'
+      +'<div style="text-align:left"><div class="comm-amount">'+d.income+' ر</div>'
+      +'<div style="font-size:11px;color:#64748b">'+comm+' ر عمولة</div></div></div>';
+  });
+  sl.innerHTML=html||'<div class="empty-state">لا توجد بيانات</div>';
+}
+
+// ── RATINGS ──
+function renderRatings(){
+  var el=document.getElementById('all-ratings-list');if(!el) return;
+  var all=getAllRatings();
+  if(!all.length){el.innerHTML='<div class="empty-state">لا توجد تقييمات</div>';return;}
+  all.sort(function(a,b){return (b.r.createdAt||0)-(a.r.createdAt||0);});
+  var html='';
+  all.forEach(function(x){
+    var r=x.r;
+    var info=(allStores[x.storeId]||{}).info||{};
+    var st='★'.repeat(r.stars||0)+'☆'.repeat(5-(r.stars||0));
+    html+='<div class="order-row"><div>'
+      +'<div style="color:#C9A84C;font-size:18px">'+st+'</div>'
+      +'<div style="font-size:11px;color:#64748b">'+san(info.name||x.storeId)+'</div>'
+      +(r.note?'<div style="font-size:12px;color:#94a3b8;margin-top:2px">'+san(r.note)+'</div>':'')
+      +'<div style="font-size:10px;color:#475569">'+fmtT(r.r?r.r.createdAt:r.createdAt)+'</div></div>'
+      +'<div style="font-size:20px">'+(r.stars>=4?'😊':r.stars>=3?'😐':'😞')+'</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+// ── TABS ──
+function switchTab(tab){
+  activeTab=tab;
+  document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab);});
+  ['overview','stores','orders','income','ratings'].forEach(function(t){
+    var p=document.getElementById('panel-'+t);
+    if(p) p.style.display=t===tab?'block':'none';
+  });
+  if(tab==='stores') renderStores();
+  if(tab==='orders') renderOrders();
+  if(tab==='income') renderIncome();
+  if(tab==='ratings') renderRatings();
+  try{localStorage.setItem('admin_tab',tab);}catch(e){}
+}
+
+// ── LOGIN ──
+function doLogin(){
+  var p=document.getElementById('pass-input').value.trim();
+  var err=document.getElementById('login-err');
+  if(p===ADMIN_PASS){
+    err.style.display='none';
+    var rem=document.getElementById('remember-me');
+    try{if(rem&&rem.checked) localStorage.setItem('admin_auth','1');else localStorage.removeItem('admin_auth');}catch(e){}
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    initFirebase();
+  } else {
+    err.style.display='block';
+    document.getElementById('pass-input').value='';
+    setTimeout(function(){err.style.display='none';},3000);
+  }
+}
+
+function doLogout(){
+  try{localStorage.removeItem('admin_auth');localStorage.removeItem('admin_tab');}catch(e){}
+  db=null;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('pass-input').value='';
+  document.getElementById('pass-input').type='password';
+  var sp=document.getElementById('show-pass');if(sp) sp.checked=false;
+}
+
+// ── INIT ──
+window.addEventListener('load',function(){
+  // show-pass
+  var sp=document.getElementById('show-pass');
+  var pi=document.getElementById('pass-input');
+  if(sp&&pi) sp.addEventListener('change',function(){pi.type=this.checked?'text':'password';});
+
+  // login
+  document.getElementById('login-btn').addEventListener('click',doLogin);
+  pi.addEventListener('keypress',function(e){if(e.key==='Enter')doLogin();});
+
+  // logout
+  document.getElementById('logout-btn').addEventListener('click',doLogout);
+
+  // tabs
+  document.querySelectorAll('.nav-tab').forEach(function(t){
+    t.addEventListener('click',function(){switchTab(this.dataset.tab);});
+  });
+
+  // logo file
+  document.getElementById('sf-logo-file').addEventListener('change',function(){
+    if(this.files&&this.files[0]) compressImg(this.files[0],function(b64){
+      newStoreLogo=b64;
+      var lp=document.getElementById('sf-logo-preview');
+      lp.src=b64;lp.style.display='block';
+    });
+  });
+
+  // add store btn
+  document.getElementById('add-store-btn').addEventListener('click',function(){showStoreForm(null);});
+  document.getElementById('save-store-btn').addEventListener('click',saveStore);
+  document.getElementById('cancel-store-btn').addEventListener('click',hideStoreForm);
+
+  // event delegation for store list + orders filter + income quick
+  document.addEventListener('click',function(e){
+    // toggle store
+    var tb=e.target.closest('.toggle-store-btn');
+    if(tb){
+      var sid=tb.dataset.sid;
+      var cur=tb.dataset.status;
+      var ns=cur==='open'?'closed':'open';
+      db.ref('stores/'+sid+'/info/status').set(ns,function(){notif(ns==='open'?'تم تفعيل المتجر':'تم إيقاف المتجر');});
+    }
+    // edit store
+    var eb=e.target.closest('.edit-store-btn');
+    if(eb) showStoreForm(eb.dataset.sid);
+    // toggle visible
+    var vb=e.target.closest('.toggle-visible-btn');
+    if(vb){
+      var isVis=vb.dataset.visible==='true';
+      db.ref('stores/'+vb.dataset.sid+'/info/visible').set(!isVis,function(){
+        notif(isVis?'تم إخفاء المتجر من توصيل الحي':'تم إظهار المتجر في توصيل الحي');
+      });
+    }
+    // del store
+    var db2=e.target.closest('.del-store-btn');
+    if(db2&&confirm('حذف هذا المتجر وجميع بياناته؟')) db.ref('stores/'+db2.dataset.sid).remove(function(){notif('تم الحذف');});
+    // orders filter
+    var of=e.target.closest('[data-filter]');
+    if(of){orderFilter=of.dataset.filter;document.querySelectorAll('[data-filter]').forEach(function(x){x.style.fontWeight='normal';});of.style.fontWeight='800';renderOrders();}
+    // income quick
+    var qb=e.target.closest('[data-quick]');
+    if(qb) setIncomeQuick(qb.dataset.quick);
+  });
+
+  // Auto-login
+  try{
+    var auth=localStorage.getItem('admin_auth');
+    if(auth==='1'){
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('main-app').style.display='block';
+      initFirebase();
+      return;
+    }
+  }catch(e){}
+  document.getElementById('login-screen').style.display='flex';
+});
+</script>
+</body>
+</html>
