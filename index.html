@@ -662,6 +662,114 @@ function doLogout(){
 }
 
 // ── INIT ──
+// ── ADS MANAGEMENT ──
+var adImgData=null;
+
+function handleAdImg(inp){
+  if(!inp.files||!inp.files[0]) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var c=document.createElement('canvas');
+      var MAX=1200,w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      adImgData=c.toDataURL('image/jpeg',.8);
+      var pv=document.getElementById('ad-img-preview');
+      if(pv){pv.src=adImgData;pv.style.display='block';}
+      document.getElementById('ad-image-url').value='';
+    };
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(inp.files[0]);
+}
+
+function loadAdsList(){
+  if(!db) return;
+  db.ref('ads').on('value',function(snap){
+    var data=snap.val()||{};
+    var el=document.getElementById('ads-list');
+    if(!el) return;
+    var keys=Object.keys(data);
+    if(!keys.length){
+      el.innerHTML='<div style="text-align:center;color:#64748b;padding:30px">لا توجد إعلانات بعد</div>';
+      return;
+    }
+    el.innerHTML='';
+    keys.forEach(function(kid){
+      var a=data[kid];
+      html+='<div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.08)">'
+        +(a.image?'<img src="'+a.image+'" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px">':'')
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        +'</div></div>';
+    });
+  });
+}
+
+function showAddAd(){
+  var data={}; if(db) db.ref('ads').once('value',function(s){data=s.val()||{};});
+  setTimeout(function(){
+    if(Object.keys(data).length>=5){notif('الحد الأقصى 5 إعلانات');return;}
+    document.getElementById('ad-form-title').textContent='إضافة إعلان';
+    document.getElementById('ad-edit-id').value='';
+    document.getElementById('ad-image-url').value='';
+    document.getElementById('ad-link').value='';
+    document.getElementById('ad-img-preview').style.display='none';
+    adImgData=null;
+    document.getElementById('ad-form').style.display='block';
+  },200);
+}
+
+function editAd(kid){
+  if(!db) return;
+  db.ref('ads/'+kid).once('value',function(snap){
+    var a=snap.val()||{};
+    document.getElementById('ad-form-title').textContent='تعديل إعلان';
+    document.getElementById('ad-edit-id').value=kid;
+    document.getElementById('ad-image-url').value=a.url||'';
+    document.getElementById('ad-link').value=a.link||'';
+    var pv=document.getElementById('ad-img-preview');
+    if(a.image){pv.src=a.image;pv.style.display='block';}
+    else pv.style.display='none';
+    adImgData=a.image||null;
+    document.getElementById('ad-form').style.display='block';
+  });
+}
+
+function saveAd(){
+  if(!db) return;
+  var urlInput=document.getElementById('ad-image-url').value.trim();
+  var img=adImgData||urlInput;
+  if(!img){notif('أضف صورة أولاً');return;}
+  var kid=document.getElementById('ad-edit-id').value;
+  var adData={image:img,link:document.getElementById('ad-link').value.trim()||null,visible:true,createdAt:Date.now()};
+  var ref=kid?db.ref('ads/'+kid):db.ref('ads').push();
+  ref.set(adData,function(){
+    notif('تم الحفظ ✅');
+    cancelAdForm();
+  });
+}
+
+function cancelAdForm(){
+  document.getElementById('ad-form').style.display='none';
+  adImgData=null;
+}
+
+function toggleAdVisible(kid,current){
+  if(!db) return;
+  db.ref('ads/'+kid+'/visible').set(current===false?true:false,function(){
+    notif('تم التحديث');
+  });
+}
+
+function deleteAd(kid){
+  if(!confirm('حذف هذا الإعلان؟')) return;
+  if(!db) return;
+  db.ref('ads/'+kid).remove(function(){notif('تم الحذف');});
+}
+
 window.addEventListener('load',function(){
   // show-pass
   var sp=document.getElementById('show-pass');
