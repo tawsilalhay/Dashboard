@@ -271,21 +271,19 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction
     </div>
     <div id="ads-list"></div>
     <div id="ad-form" style="display:none;background:#0f172a;border-radius:12px;padding:14px;margin-top:12px;border:1px solid rgba(255,255,255,.1)">
-      <div style="font-size:14px;font-weight:800;color:#C9A84C;margin-bottom:12px" id="ad-form-title">إضافة إعلان</div>
+      <div style="font-size:14px;font-weight:800;color:#C9A84C;margin-bottom:10px" id="ad-form-title">إضافة إعلان</div>
       <input type="hidden" id="ad-edit-id">
-      <img id="ad-img-preview" style="width:100%;border-radius:8px;max-height:150px;object-fit:cover;display:none;margin-bottom:4px">
-      <div id="ad-img-size" style="font-size:11px;color:#64748b;margin-bottom:8px"></div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <label for="ad-file-device" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;background:rgba(201,168,76,.15);border:1.5px dashed #C9A84C;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:#C9A84C;text-align:center">
-          📁 من الجهاز
-        </label>
-        <label for="ad-file-camera" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;background:rgba(201,168,76,.15);border:1.5px dashed #C9A84C;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:#C9A84C;text-align:center">
-          📷 الاستوديو
-        </label>
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;line-height:1.6">
+        ارفع الصورة على أي موقع مجاني مثل:<br>
+        <a href="https://imgbb.com" target="_blank" style="color:#C9A84C">imgbb.com</a> أو 
+        <a href="https://imgur.com" target="_blank" style="color:#C9A84C">imgur.com</a><br>
+        ثم الصق رابط الصورة المباشر هنا:
       </div>
-      <input type="file" id="ad-file-device" accept="image/*" onchange="handleAdImg(this)" style="display:none">
-      <input type="file" id="ad-file-camera" accept="image/*" capture="environment" onchange="handleAdImg(this)" style="display:none">
-      <div style="display:flex;gap:8px;margin-top:4px">
+      <input class="f-input" id="ad-image-url" placeholder="https://i.ibb.co/..." style="margin-bottom:8px">
+      <img id="ad-img-preview" style="width:100%;border-radius:8px;max-height:140px;object-fit:cover;display:none;margin-bottom:8px">
+      <button onclick="previewAdUrl()" style="width:100%;background:#1e40af;color:#fff;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">👁 معاينة الصورة</button>
+      <div id="ad-url-err" style="font-size:12px;color:#ef4444;display:none;margin-bottom:6px"></div>
+      <div style="display:flex;gap:8px">
         <button onclick="saveAd()" style="flex:1;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ</button>
         <button onclick="cancelAdForm()" style="flex:1;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:11px;font-family:inherit;font-size:13px;cursor:pointer">إلغاء</button>
       </div>
@@ -716,39 +714,23 @@ function doLogout(){
 // ── ADS MANAGEMENT ──
 var adImgData=null;
 
-function handleAdImg(inp){
-  if(!inp.files||!inp.files[0]) return;
-  var szEl=document.getElementById('ad-img-size');
+function previewAdUrl(){
+  var url=document.getElementById('ad-image-url').value.trim();
   var pv=document.getElementById('ad-img-preview');
-  adImgData=null;
-  if(pv){pv.src='';pv.style.display='none';}
-  var r=new FileReader();
-  r.onload=function(e){
-    var img=new Image();
-    img.onload=function(){
-      var c=document.createElement('canvas');
-      // Compress aggressively: max 500px, quality 0.4
-      var MAX=500,w=img.width,h=img.height;
-      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
-      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
-      c.width=w;c.height=h;
-      c.getContext('2d').drawImage(img,0,0,w,h);
-      var data=c.toDataURL('image/jpeg',0.4);
-      var sz=Math.round(data.length*3/4/1024);
-      if(sz>300){
-        // Reject
-        if(szEl){szEl.textContent='❌ الصورة كبيرة جداً ('+sz+' KB) — الحد الأقصى 300 KB. اختر صورة أصغر.';szEl.style.color='#ef4444';}
-        adImgData=null;
-        inp.value='';
-        return;
-      }
-      adImgData=data;
-      if(pv){pv.src=data;pv.style.display='block';}
-      if(szEl){szEl.textContent='✅ الصورة مقبولة ('+sz+' KB)';szEl.style.color='#22c55e';}
-    };
-    img.src=e.target.result;
+  var err=document.getElementById('ad-url-err');
+  if(!url){if(err){err.textContent='أدخل رابط الصورة أولاً';err.style.display='block';}return;}
+  if(err) err.style.display='none';
+  var img=new Image();
+  img.onload=function(){
+    if(pv){pv.src=url;pv.style.display='block';}
+    adImgData=url;
   };
-  r.readAsDataURL(inp.files[0]);
+  img.onerror=function(){
+    if(err){err.textContent='❌ تعذّر تحميل الصورة — تأكد من الرابط';err.style.display='block';}
+    if(pv){pv.style.display='none';}
+    adImgData=null;
+  };
+  img.src=url;
 }
 
 function loadAdsList(){
@@ -809,9 +791,11 @@ function editAd(kid){
 
 function saveAd(){
   if(!db){notif('غير متصل');return;}
-  if(!adImgData){notif('اختر صورة أولاً');return;}
+  var url=document.getElementById('ad-image-url').value.trim();
+  var img=adImgData||url;
+  if(!img){notif('أضف رابط صورة أولاً');return;}
   var kid=document.getElementById('ad-edit-id').value;
-  var adData={image:adImgData,visible:true,createdAt:Date.now()};
+  var adData={image:img,visible:true,createdAt:Date.now()};
   var ref=kid?db.ref('ads/'+kid):db.ref('ads').push();
   ref.set(adData,function(err){
     if(err){notif('خطأ في الحفظ: '+err.message);return;}
@@ -878,10 +862,10 @@ function cancelAdForm(){
   adImgData=null;
   var pv=document.getElementById('ad-img-preview');
   if(pv){pv.src='';pv.style.display='none';}
-  var df=document.getElementById('ad-file-device');
-  if(df) df.value='';
-  var cf=document.getElementById('ad-file-camera');
-  if(cf) cf.value='';
+  var url=document.getElementById('ad-image-url');
+  if(url) url.value='';
+  var err=document.getElementById('ad-url-err');
+  if(err) err.style.display='none';
 }
 
 function toggleAdVisible(kid,current){
