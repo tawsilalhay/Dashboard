@@ -750,14 +750,19 @@ function previewAd(){
 }
 
 function loadAdsList(){
-  if(!db) return;
-  db.ref('ads').on('value',function(snap){
+  var el=document.getElementById('ads-list');
+  if(el) el.innerHTML='<div style="color:#C9A84C;padding:10px">جاري تحميل الإعلانات...</div>';
+  if(!db){
+    if(el) el.innerHTML='<div style="color:#ef4444;padding:10px">❌ غير متصل بـ Firebase</div>';
+    return;
+  }
+  db.ref('ads').once('value',function(snap){
     var data=snap.val()||{};
     var el=document.getElementById('ads-list');
     if(!el) return;
     var keys=Object.keys(data);
     if(!keys.length){
-      el.innerHTML='<div style="text-align:center;color:#64748b;padding:30px">لا توجد إعلانات بعد</div>';
+      el.innerHTML='<div style="text-align:center;color:#64748b;padding:30px">لا توجد إعلانات بعد<br><small style="font-size:10px">Firebase متصل ✅</small></div>';
       return;
     }
     el.innerHTML='';
