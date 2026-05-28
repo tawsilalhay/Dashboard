@@ -615,6 +615,18 @@ function setIncomeQuick(mode){
   renderIncome();
 }
 function getPayLabel(m){var pl={apple_pay:'Apple Pay',mada:'مدى',cash:'كاش/شبكة'};return pl[m]||m||'-';}
+function getMoyasarFee(payMethod, amount){
+  // Moyasar fees: mada/apple_pay = 1.5% + 1 SAR, visa/mastercard = 2.2% + 1 SAR
+  if(!amount || payMethod==='cash' || payMethod==='network' || payMethod==='both_cash') return 0;
+  if(payMethod==='mada' || payMethod==='apple_pay'){
+    return Math.round((amount*0.015 + 1)*100)/100;
+  }
+  if(payMethod==='visa' || payMethod==='mastercard'){
+    return Math.round((amount*0.022 + 1)*100)/100;
+  }
+  return 0;
+}
+
 function renderIncome(){
   var all=getAllOrders().filter(function(x){
     if(x.order.status!=='delivered') return false;
@@ -624,49 +636,83 @@ function renderIncome(){
   });
   var total=all.reduce(function(s,x){return s+(x.order.total||0);},0);
   var totalComm=0;
+  var totalMoyasar=0;
   var storeInc={};
   all.forEach(function(x){
     var sid=x.storeId;
-    if(!storeInc[sid]) storeInc[sid]={income:0,orders:0};
-    storeInc[sid].income+=x.order.total||0;
+    if(!storeInc[sid]) storeInc[sid]={income:0,orders:0,cash:0,electronic:0,moyasarFees:0,platformComm:0};
+    var amt=x.order.total||0;
+    storeInc[sid].income+=amt;
     storeInc[sid].orders++;
-    var info=(allStores[sid]||{}).info||{};
-    totalComm+=Math.round((x.order.total||0)*(info.commission||0)/100);
+    // Platform commission: 5 SAR fixed per order
+    storeInc[sid].platformComm+=5;
+    totalComm+=5;
+    // Moyasar fee (paid by store)
+    var mFee=getMoyasarFee(x.order.payMethod, amt);
+    storeInc[sid].moyasarFees+=mFee;
+    totalMoyasar+=mFee;
+    // Cash vs electronic
+    var pm=x.order.payMethod||'cash';
+    if(pm==='cash'||pm==='network'||pm==='both_cash') storeInc[sid].cash+=amt;
+    else storeInc[sid].electronic+=amt;
   });
-  var ti=document.getElementById('inc-total');var tc=document.getElementById('inc-comm');
-  if(ti) ti.textContent=total;if(tc) tc.textContent=totalComm;
+
+  var ti=document.getElementById('inc-total');
+  var tc=document.getElementById('inc-comm');
+  var tm=document.getElementById('inc-moyasar');
+  if(ti) ti.textContent=total+' ريال';
+  if(tc) tc.textContent=totalComm+' ريال';
+  if(tm) tm.textContent=totalMoyasar.toFixed(2)+' ريال';
+
   var sl=document.getElementById('store-income-list');if(!sl) return;
   var html='';
   Object.keys(storeInc).forEach(function(sid){
     var info=(allStores[sid]||{}).info||{name:sid};
     var d=storeInc[sid];
-    var comm=Math.round(d.income*(info.commission||0)/100);
-    // breakdown by type and payment
-    var delivery=0,pickup=0;
-    var payCount={};
-    (all.filter(function(x){return x.storeId===sid;})).forEach(function(x){
-      var o=x.order;
-      if(o.orderType==='pickup') pickup+=o.total||0; else delivery+=o.total||0;
-      var pm=o.payMethod||'other';
-      payCount[pm]=(payCount[pm]||0)+1;
-    });
-    var payStr=Object.keys(payCount).map(function(k){return getPayLabel(k)+': '+payCount[k];}).join(' | ');
-    html+='<div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-      +'<div style="font-weight:700;font-size:14px">'+san(info.emoji||'🏪')+' '+san(info.name)+'</div>'
-      +'<div class="comm-amount">'+d.income+' ر</div></div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#64748b;margin-bottom:6px">'
-      +'<span>📦 '+d.orders+' طلب</span>'
-      +(delivery?'<span>🛵 توصيل: '+delivery+' ر</span>':'')
-      +(pickup?'<span>🏪 استلام: '+pickup+' ر</span>':'')
-      +'<span>عمولة '+(info.commission||0)+'%: '+comm+' ر</span></div>'
-      +(payStr?'<div style="font-size:11px;color:#888">'+payStr+'</div>':'')
+    var netStore=d.income-d.platformComm-d.moyasarFees;
+    var PAY_LABELS={apple_pay:'Apple Pay',mada:'مدى',cash:'كاش',network:'شبكة',both_cash:'كاش/شبكة',visa:'فيزا',mastercard:'ماستر'};
+    var payDetails=all.filter(function(x){return x.storeId===sid;}).reduce(function(acc,x){
+      var pm=x.order.payMethod||'cash';
+      if(!acc[pm]) acc[pm]={count:0,total:0,fees:0};
+      acc[pm].count++;
+      acc[pm].total+=x.order.total||0;
+      acc[pm].fees+=getMoyasarFee(pm,x.order.total||0);
+      return acc;
+    },{});
+    html+='<div style="background:#0f172a;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,.08)">'
+      // Store name + total
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<div style="font-weight:800;font-size:15px">'+san(info.name)+'</div>'
+      +'<div style="font-size:16px;font-weight:800;color:#C9A84C">'+d.income+' ريال</div>'
+      +'</div>'
+      // Summary rows
+      +'<div style="display:flex;flex-direction:column;gap:5px;font-size:12px;margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">عدد الطلبات</span><span>'+d.orders+'</span></div>'
+      +(d.cash?'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">دفع عند الاستلام</span><span>'+d.cash+' ريال</span></div>':'')
+      +(d.electronic?'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">دفع إلكتروني</span><span>'+d.electronic+' ريال</span></div>':'')
+      +'<div style="display:flex;justify-content:space-between"><span style="color:#C9A84C">عمولة المنصة (5 ر × '+d.orders+')</span><span style="color:#C9A84C">'+d.platformComm+' ريال</span></div>'
+      +(d.moyasarFees>0?'<div style="display:flex;justify-content:space-between"><span style="color:#f59e0b">رسوم Moyasar</span><span style="color:#f59e0b">'+d.moyasarFees.toFixed(2)+' ريال</span></div>':'')
+      +'<div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,.1);padding-top:6px;margin-top:2px"><span style="color:#22c55e;font-weight:700">صافي المتجر</span><span style="color:#22c55e;font-weight:700">'+netStore.toFixed(2)+' ريال</span></div>'
+      +'</div>'
+      // Payment breakdown
+      +(Object.keys(payDetails).length?
+        '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;font-size:11px">'
+        +'<div style="color:#64748b;margin-bottom:5px">تفصيل وسائل الدفع:</div>'
+        +Object.keys(payDetails).map(function(pm){
+          var pd=payDetails[pm];
+          var feeStr=pd.fees>0?' (رسوم Moyasar: '+pd.fees.toFixed(2)+' ر)':'';
+          return '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+            +'<span style="color:#94a3b8">'+(PAY_LABELS[pm]||pm)+' ('+pd.count+' طلب)</span>'
+            +'<span>'+pd.total+' ر'+feeStr+'</span></div>';
+        }).join('')
+        +'</div>'
+        :'')
       +'</div>';
   });
   sl.innerHTML=html||'<div class="empty-state">لا توجد بيانات</div>';
 }
 
-// ── RATINGS ──
+
 function renderRatings(){
   var el=document.getElementById('all-ratings-list');if(!el) return;
   var all=getAllRatings();
