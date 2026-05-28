@@ -782,11 +782,14 @@ function loadAdsList(){
       var bv=document.createElement('button');
       bv.textContent=isVisible?'إخفاء':'إظهار';
       bv.style.cssText='flex:1;background:'+(isVisible?'#854d0e':'#166534')+';color:#fff;border:none;border-radius:7px;padding:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer';
-      bv.onclick=(function(k,v){return function(){toggleAdVisible(k,v);};})(kid,a.visible);
+      // Pass current visible value correctly
+      (function(k,visible){
+        bv.onclick=function(){toggleAdVisible(k,visible);};
+      })(kid, isVisible);
       var bd=document.createElement('button');
       bd.textContent='🗑️ حذف';
       bd.style.cssText='flex:1;background:#7f1d1d;color:#fff;border:none;border-radius:7px;padding:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer';
-      bd.onclick=(function(k){return function(){deleteAd(k);};})(kid);
+      (function(k){bd.onclick=function(){deleteAd(k);};})(kid);
       btns.appendChild(bv);btns.appendChild(bd);
       wrap.appendChild(btns);
       el.appendChild(wrap);
@@ -850,18 +853,21 @@ function cancelAdForm(){
 
 function toggleAdVisible(kid,current){
   if(!db) return;
-  db.ref('ads/'+kid+'/visible').set(current===false?true:false,function(){
-    notif('تم التحديث ✅');
-    setTimeout(loadAdsList,300);
+  var newVal=current===false?true:false;
+  db.ref('ads/'+kid+'/visible').set(newVal,function(err){
+    if(err){notif('خطأ: '+err.message);return;}
+    notif(newVal?'تم الإظهار':'تم الإخفاء');
+    loadAdsList();
   });
 }
 
 function deleteAd(kid){
-  if(!confirm('حذف هذا الإعلان؟')) return;
+  if(!confirm('حذف هذا الإعلان نهائياً؟')) return;
   if(!db) return;
-  db.ref('ads/'+kid).remove(function(){
+  db.ref('ads/'+kid).remove(function(err){
+    if(err){notif('خطأ في الحذف: '+err.message);return;}
     notif('تم الحذف ✅');
-    setTimeout(loadAdsList,300);
+    loadAdsList();
   });
 }
 
