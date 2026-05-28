@@ -760,15 +760,49 @@ function loadAdsList(){
       return;
     }
     el.innerHTML='';
-    keys.forEach(function(kid){
+    keys.forEach(function(kid,idx){
       var a=data[kid];
-      html+='<div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.08)">'
-        +(a.image?'<img src="'+a.image+'" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px">':'')
-        +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-        +'</div></div>';
+      var isVisible=a.visible!==false;
+      var div=document.createElement('div');
+      div.style.cssText='background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.08)';
+      // Number badge
+      var badge=document.createElement('div');
+      badge.style.cssText='font-size:11px;color:#64748b;margin-bottom:6px';
+      badge.textContent='إعلان '+(idx+1)+' · '+(isVisible?'ظاهر ✅':'مخفي 🚫');
+      div.appendChild(badge);
+      // Image
+      if(a.image){
+        var imgEl=document.createElement('img');
+        imgEl.src=a.image;
+        imgEl.referrerPolicy='no-referrer';
+        imgEl.style.cssText='width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:8px;display:block';
+        imgEl.onerror=function(){this.style.display='none';};
+        div.appendChild(imgEl);
+        // URL text
+        var urlEl=document.createElement('div');
+        urlEl.style.cssText='font-size:10px;color:#475569;word-break:break-all;margin-bottom:8px;padding:4px 6px;background:rgba(255,255,255,.05);border-radius:4px';
+        urlEl.textContent=a.image;
+        div.appendChild(urlEl);
+      }
+      // Buttons
+      var btns=document.createElement('div');
+      btns.style.cssText='display:flex;gap:6px';
+      var bv=document.createElement('button');
+      bv.textContent=isVisible?'إخفاء':'إظهار';
+      bv.style.cssText='flex:1;background:'+(isVisible?'#854d0e':'#166534')+';color:#fff;border:none;border-radius:7px;padding:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer';
+      bv.onclick=(function(k,v){return function(){toggleAdVisible(k,v);};})(kid,a.visible);
+      var bd=document.createElement('button');
+      bd.textContent='🗑️ حذف';
+      bd.style.cssText='flex:1;background:#7f1d1d;color:#fff;border:none;border-radius:7px;padding:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer';
+      bd.onclick=(function(k){return function(){deleteAd(k);};})(kid);
+      btns.appendChild(bv);
+      btns.appendChild(bd);
+      div.appendChild(btns);
+      el.appendChild(div);
     });
   });
 }
+
 
 function showAddAd(){
   if(!db){notif('غير متصل');return;}
