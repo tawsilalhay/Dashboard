@@ -248,12 +248,24 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction
       <div style="font-size:16px;font-weight:800;color:#C9A84C">🖼️ الإعلانات</div>
       <button onclick="showAddAd()" style="background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:7px 14px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">+ إضافة</button>
     </div>
-    <div style="font-size:12px;color:#64748b;margin-bottom:10px">حتى 5 إعلانات — تظهر في تطبيق توصيل الحي تلقائياً</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:12px">حتى 5 إعلانات — تظهر في تطبيق توصيل الحي تلقائياً</div>
+    <!-- Default ad text control -->
+    <div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(201,168,76,.3)">
+      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:8px">✏️ الإعلان الافتراضي (يظهر عند عدم وجود صور)</div>
+      <label class="f-label">العنوان</label>
+      <input class="f-input" id="def-ad-title" placeholder="توصيل الحي 🛵" style="margin-bottom:6px">
+      <label class="f-label">النص</label>
+      <textarea class="f-input" id="def-ad-text" rows="2" placeholder="من متاجر حيك مباشرة لبابك" style="resize:none;height:55px;margin-bottom:6px"></textarea>
+      <label class="f-label">نص الزر</label>
+      <input class="f-input" id="def-ad-badge" placeholder="اطلب الآن" style="margin-bottom:8px">
+      <button onclick="saveDefaultAd()" style="width:100%;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">حفظ الإعلان الافتراضي</button>
+    </div>
     <div id="ads-list"></div>
     <div id="ad-form" style="display:none;background:#0f172a;border-radius:12px;padding:14px;margin-top:12px;border:1px solid rgba(255,255,255,.1)">
       <div style="font-size:14px;font-weight:800;color:#C9A84C;margin-bottom:12px" id="ad-form-title">إضافة إعلان</div>
       <input type="hidden" id="ad-edit-id">
-      <img id="ad-img-preview" style="width:100%;border-radius:8px;max-height:150px;object-fit:cover;display:none;margin-bottom:10px">
+      <img id="ad-img-preview" style="width:100%;border-radius:8px;max-height:150px;object-fit:cover;display:none;margin-bottom:4px">
+      <div id="ad-img-size" style="font-size:11px;color:#64748b;margin-bottom:8px"></div>
       <div style="display:flex;gap:8px;margin-bottom:10px">
         <label for="ad-file-device" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;background:rgba(201,168,76,.15);border:1.5px dashed #C9A84C;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:#C9A84C;text-align:center">
           📁 من الجهاز
@@ -702,14 +714,17 @@ function handleAdImg(inp){
     var img=new Image();
     img.onload=function(){
       var c=document.createElement('canvas');
-      var MAX=900,w=img.width,h=img.height;
+      var MAX=600,w=img.width,h=img.height;
       if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
       if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
       c.width=w;c.height=h;
       c.getContext('2d').drawImage(img,0,0,w,h);
-      adImgData=c.toDataURL('image/jpeg',.75);
+      adImgData=c.toDataURL('image/jpeg',.5);
+      var sz=Math.round(adImgData.length*3/4/1024);
       var pv=document.getElementById('ad-img-preview');
       if(pv){pv.src=adImgData;pv.style.display='block';}
+      var szEl=document.getElementById('ad-img-size');
+      if(szEl) szEl.textContent='حجم الصورة: '+sz+' KB'+(sz>500?' (كبير جداً، قد لا تُحفظ)':'');
     };
     img.src=e.target.result;
   };
@@ -782,6 +797,32 @@ function saveAd(){
     if(err){notif('خطأ في الحفظ: '+err.message);return;}
     notif('تم الحفظ ✅');
     cancelAdForm();
+  });
+}
+
+function loadDefaultAd(){
+  if(!db) return;
+  db.ref('default_ad').once('value',function(snap){
+    var d=snap.val()||{};
+    var t=document.getElementById('def-ad-title');
+    var tx=document.getElementById('def-ad-text');
+    var b=document.getElementById('def-ad-badge');
+    if(t) t.value=d.title||'توصيل الحي 🛵';
+    if(tx) tx.value=d.text||'من متاجر حيك مباشرة لبابك';
+    if(b) b.value=d.badge||'اطلب الآن';
+  });
+}
+
+function saveDefaultAd(){
+  if(!db) return;
+  var d={
+    title:document.getElementById('def-ad-title').value.trim()||'توصيل الحي 🛵',
+    text:document.getElementById('def-ad-text').value.trim()||'من متاجر حيك مباشرة لبابك',
+    badge:document.getElementById('def-ad-badge').value.trim()||'اطلب الآن'
+  };
+  db.ref('default_ad').set(d,function(err){
+    if(err) notif('خطأ: '+err.message);
+    else notif('تم الحفظ ✅');
   });
 }
 
