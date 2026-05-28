@@ -249,16 +249,18 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction
       <button onclick="showAddAd()" style="background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:7px 14px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">+ إضافة</button>
     </div>
     <div style="font-size:12px;color:#64748b;margin-bottom:12px">حتى 5 إعلانات — تظهر في تطبيق توصيل الحي تلقائياً</div>
-    <!-- Default ad text control -->
+    <!-- Banner control -->
     <div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(201,168,76,.3)">
-      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:8px">✏️ الإعلان الافتراضي (يظهر عند عدم وجود صور)</div>
-      <label class="f-label">العنوان</label>
-      <input class="f-input" id="def-ad-title" placeholder="توصيل الحي 🛵" style="margin-bottom:6px">
-      <label class="f-label">النص</label>
-      <textarea class="f-input" id="def-ad-text" rows="2" placeholder="من متاجر حيك مباشرة لبابك" style="resize:none;height:55px;margin-bottom:6px"></textarea>
+      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px">🎨 البنر العلوي في توصيل الحي</div>
+      <label class="f-label">السطر الأول (العنوان)</label>
+      <input class="f-input" id="banner-line1" placeholder="توصيل الحي 🛵" style="margin-bottom:8px">
+      <label class="f-label">السطر الثاني</label>
+      <input class="f-input" id="banner-line2" placeholder="من متاجر حيك مباشرة لبابك" style="margin-bottom:8px">
+      <label class="f-label">السطر الثالث</label>
+      <input class="f-input" id="banner-line3" placeholder="سريع، سهل، وموثوق" style="margin-bottom:8px">
       <label class="f-label">نص الزر</label>
-      <input class="f-input" id="def-ad-badge" placeholder="اطلب الآن" style="margin-bottom:8px">
-      <button onclick="saveDefaultAd()" style="width:100%;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">حفظ الإعلان الافتراضي</button>
+      <input class="f-input" id="banner-badge" placeholder="اطلب الآن" style="margin-bottom:10px">
+      <button onclick="saveBanner()" style="width:100%;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ البنر</button>
     </div>
     <div id="ads-list"></div>
     <div id="ad-form" style="display:none;background:#0f172a;border-radius:12px;padding:14px;margin-top:12px;border:1px solid rgba(255,255,255,.1)">
@@ -802,27 +804,30 @@ function saveAd(){
 
 function loadDefaultAd(){
   if(!db) return;
-  db.ref('default_ad').once('value',function(snap){
+  db.ref('banner').once('value',function(snap){
     var d=snap.val()||{};
-    var t=document.getElementById('def-ad-title');
-    var tx=document.getElementById('def-ad-text');
-    var b=document.getElementById('def-ad-badge');
-    if(t) t.value=d.title||'توصيل الحي 🛵';
-    if(tx) tx.value=d.text||'من متاجر حيك مباشرة لبابك';
+    var f=document.getElementById('banner-line1');
+    var s=document.getElementById('banner-line2');
+    var t=document.getElementById('banner-line3');
+    var b=document.getElementById('banner-badge');
+    if(f) f.value=d.line1||'توصيل الحي 🛵';
+    if(s) s.value=d.line2||'من متاجر حيك مباشرة لبابك';
+    if(t) t.value=d.line3||'سريع، سهل، وموثوق';
     if(b) b.value=d.badge||'اطلب الآن';
   });
 }
 
-function saveDefaultAd(){
+function saveBanner(){
   if(!db) return;
   var d={
-    title:document.getElementById('def-ad-title').value.trim()||'توصيل الحي 🛵',
-    text:document.getElementById('def-ad-text').value.trim()||'من متاجر حيك مباشرة لبابك',
-    badge:document.getElementById('def-ad-badge').value.trim()||'اطلب الآن'
+    line1:document.getElementById('banner-line1').value.trim()||'توصيل الحي 🛵',
+    line2:document.getElementById('banner-line2').value.trim()||'من متاجر حيك مباشرة لبابك',
+    line3:document.getElementById('banner-line3').value.trim()||'سريع، سهل، وموثوق',
+    badge:document.getElementById('banner-badge').value.trim()||'اطلب الآن'
   };
-  db.ref('default_ad').set(d,function(err){
+  db.ref('banner').set(d,function(err){
     if(err) notif('خطأ: '+err.message);
-    else notif('تم الحفظ ✅');
+    else notif('تم حفظ البنر ✅');
   });
 }
 
