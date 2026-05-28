@@ -243,23 +243,47 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction
 
   <!-- ADS PANEL -->
   <div id="panel-ads" style="display:none;padding:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:16px;font-weight:800;color:#C9A84C">🖼️ الإعلانات</div>
       <button onclick="showAddAd()" style="background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:7px 14px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">+ إضافة</button>
     </div>
-    <div style="font-size:12px;color:#64748b;margin-bottom:12px">حتى 5 إعلانات — تظهر في تطبيق توصيل الحي تلقائياً</div>
-    <!-- Ads list shown first -->
-    <div id="ads-list" style="margin-bottom:12px"></div>
-    <!-- Header + Banner control -->
-    <div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(201,168,76,.3)">
-      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px">📱 رأس التطبيق (الشريط الأخضر العلوي)</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:10px">حتى 5 إعلانات — تظهر في تطبيق توصيل الحي</div>
+
+    <!-- ADS LIST -->
+    <div id="ads-list" style="margin-bottom:14px">
+      <div style="color:#64748b;text-align:center;padding:20px">اضغط على تبويب الإعلانات لتحميل القائمة</div>
+    </div>
+
+    <!-- ADD FORM -->
+    <div id="ad-form" style="display:none;background:#0f172a;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid rgba(201,168,76,.3)">
+      <div style="font-size:14px;font-weight:800;color:#C9A84C;margin-bottom:10px">إضافة إعلان</div>
+      <input type="hidden" id="ad-edit-id">
+      <label class="f-label">رابط الصورة المباشر</label>
+      <input class="f-input" id="ad-url-inp" placeholder="https://files.catbox.moe/..." style="margin-bottom:8px">
+      <button onclick="previewAd()" style="width:100%;background:#1e40af;color:#fff;border:none;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">👁 معاينة</button>
+      <img id="ad-img-preview" style="width:100%;border-radius:8px;max-height:130px;object-fit:cover;display:none;margin-bottom:6px">
+      <div id="ad-img-msg" style="font-size:12px;margin-bottom:8px;display:none"></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="saveAd()" style="flex:1;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ</button>
+        <button onclick="cancelAdForm()" style="flex:1;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:11px;font-family:inherit;font-size:13px;cursor:pointer">إلغاء</button>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:4px 0 14px">
+
+    <!-- HEADER CONTROL -->
+    <div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.08)">
+      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px">📱 رأس التطبيق</div>
       <label class="f-label">اسم التطبيق</label>
       <input class="f-input" id="hdr-title" placeholder="توصيل الحي" style="margin-bottom:8px">
       <label class="f-label">النص الصغير تحته</label>
-      <input class="f-input" id="hdr-sub" placeholder="أطلب من متاجر حيك المفضلة" style="margin-bottom:10px">
-      <button onclick="saveHeader()" style="width:100%;background:#2D5016;color:#fff;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px">💾 حفظ الرأس</button>
+      <input class="f-input" id="hdr-sub" placeholder="أطلب من متاجر حيك المفضلة" style="margin-bottom:8px">
+      <button onclick="saveHeader()" style="width:100%;background:#2D5016;color:#fff;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ الرأس</button>
+    </div>
 
-      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px">🎨 البنر الإعلاني (داخل السلايدر)</div>
+    <!-- BANNER CONTROL -->
+    <div style="background:#0f172a;border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,.08)">
+      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px">🎨 البنر الإعلاني</div>
       <label class="f-label">السطر الأول</label>
       <input class="f-input" id="banner-line1" placeholder="توصيل الحي 🛵" style="margin-bottom:8px">
       <label class="f-label">السطر الثاني</label>
@@ -267,21 +291,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction
       <label class="f-label">السطر الثالث</label>
       <input class="f-input" id="banner-line3" placeholder="سريع، سهل، وموثوق" style="margin-bottom:8px">
       <label class="f-label">نص الزر</label>
-      <input class="f-input" id="banner-badge" placeholder="اطلب الآن" style="margin-bottom:10px">
+      <input class="f-input" id="banner-badge" placeholder="اطلب الآن" style="margin-bottom:8px">
       <button onclick="saveBanner()" style="width:100%;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ البنر</button>
-    </div>
-    <div id="ad-form" style="display:none;background:#0f172a;border-radius:12px;padding:14px;margin-top:12px;border:1px solid rgba(255,255,255,.1)">
-      <div style="font-size:14px;font-weight:800;color:#C9A84C;margin-bottom:12px" id="ad-form-title">إضافة إعلان</div>
-      <input type="hidden" id="ad-edit-id">
-      <label class="f-label">رابط الصورة المباشر</label>
-      <input class="f-input" id="ad-url-inp" placeholder="https://i.ibb.co/..." style="margin-bottom:8px" oninput="adImgData=null;document.getElementById('save-ad-btn').disabled=true;document.getElementById('ad-img-preview').style.display='none'">
-      <button onclick="previewAd()" style="width:100%;background:#1e40af;color:#fff;border:none;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">👁 معاينة</button>
-      <img id="ad-img-preview" style="width:100%;border-radius:8px;max-height:140px;object-fit:cover;display:none;margin-bottom:6px">
-      <div id="ad-img-msg" style="font-size:12px;margin-bottom:8px;display:none"></div>
-      <div style="display:flex;gap:8px">
-        <button onclick="saveAd()" id="save-ad-btn" disabled style="flex:1;background:#555;color:#999;border:none;border-radius:8px;padding:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:not-allowed">💾 حفظ</button>
-        <button onclick="cancelAdForm()" style="flex:1;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:11px;font-family:inherit;font-size:13px;cursor:pointer">إلغاء</button>
-      </div>
     </div>
   </div>
 </div>
@@ -723,72 +734,46 @@ function doLogout(){
 // ── ADS MANAGEMENT ──
 var adImgData=null;
 
-function previewAd(){
-  var url=document.getElementById('ad-url-inp').value.trim();
-  var msg=document.getElementById('ad-img-msg');
-  var pv=document.getElementById('ad-img-preview');
-  var btn=document.getElementById('save-ad-btn');
-  if(!url){
-    if(msg){msg.textContent='❌ أدخل رابط الصورة أولاً';msg.style.color='#ef4444';msg.style.display='block';}
-    return;
-  }
-  // Accept the URL directly - show it and enable save
-  adImgData=url;
-  if(pv){
-    pv.referrerPolicy='no-referrer';
-    pv.src=url;
-    pv.style.display='block';
-    pv.onerror=function(){
-      pv.style.display='none';
-      if(msg){msg.textContent='⚠️ الصورة قد لا تظهر بسبب إعدادات الموقع لكن يمكن الحفظ';msg.style.color='#f59e0b';msg.style.display='block';}
-    };
-    pv.onload=function(){
-      if(msg){msg.textContent='✅ الصورة جاهزة';msg.style.color='#22c55e';msg.style.display='block';}
-    };
-  }
-  if(btn){btn.disabled=false;btn.style.background='#C9A84C';btn.style.color='#1A0A00';btn.style.cursor='pointer';}
-}
-
 function loadAdsList(){
   var el=document.getElementById('ads-list');
-  if(el) el.innerHTML='<div style="color:#C9A84C;padding:10px">جاري تحميل الإعلانات...</div>';
+  if(!el) return;
   if(!db){
-    if(el) el.innerHTML='<div style="color:#ef4444;padding:10px">❌ غير متصل بـ Firebase</div>';
+    el.innerHTML='<div style="color:#ef4444;padding:10px;text-align:center">❌ غير متصل</div>';
     return;
   }
+  el.innerHTML='<div style="color:#64748b;padding:10px;text-align:center">جاري التحميل...</div>';
   db.ref('ads').once('value',function(snap){
     var data=snap.val()||{};
-    var el=document.getElementById('ads-list');
-    if(!el) return;
     var keys=Object.keys(data);
     if(!keys.length){
-      el.innerHTML='<div style="text-align:center;color:#64748b;padding:30px">لا توجد إعلانات بعد<br><small style="font-size:10px">Firebase متصل ✅</small></div>';
+      el.innerHTML='<div style="color:#64748b;padding:20px;text-align:center">لا توجد إعلانات بعد<br><small>اضغط + إضافة لإضافة إعلان</small></div>';
       return;
     }
     el.innerHTML='';
     keys.forEach(function(kid,idx){
       var a=data[kid];
       var isVisible=a.visible!==false;
-      var div=document.createElement('div');
-      div.style.cssText='background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.08)';
-      // Number badge
+      var wrap=document.createElement('div');
+      wrap.style.cssText='background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.1)';
+      // Badge
       var badge=document.createElement('div');
-      badge.style.cssText='font-size:11px;color:#64748b;margin-bottom:6px';
-      badge.textContent='إعلان '+(idx+1)+' · '+(isVisible?'ظاهر ✅':'مخفي 🚫');
-      div.appendChild(badge);
+      badge.style.cssText='font-size:11px;color:#64748b;margin-bottom:8px;display:flex;justify-content:space-between';
+      badge.innerHTML='<span>إعلان '+(idx+1)+'</span><span>'+(isVisible?'<span style="color:#22c55e">● ظاهر</span>':'<span style="color:#ef4444">● مخفي</span>')+'</span>';
+      wrap.appendChild(badge);
       // Image
       if(a.image){
         var imgEl=document.createElement('img');
         imgEl.src=a.image;
         imgEl.referrerPolicy='no-referrer';
-        imgEl.style.cssText='width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:8px;display:block';
-        imgEl.onerror=function(){this.style.display='none';};
-        div.appendChild(imgEl);
-        // URL text
-        var urlEl=document.createElement('div');
-        urlEl.style.cssText='font-size:10px;color:#475569;word-break:break-all;margin-bottom:8px;padding:4px 6px;background:rgba(255,255,255,.05);border-radius:4px';
-        urlEl.textContent=a.image;
-        div.appendChild(urlEl);
+        imgEl.style.cssText='width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;display:block';
+        imgEl.onerror=function(){
+          this.style.display='none';
+          var fb=document.createElement('div');
+          fb.style.cssText='background:#1e293b;border-radius:8px;padding:8px;margin-bottom:8px;font-size:10px;color:#64748b;word-break:break-all';
+          fb.textContent=a.image;
+          wrap.insertBefore(fb,wrap.children[1]);
+        };
+        wrap.appendChild(imgEl);
       }
       // Buttons
       var btns=document.createElement('div');
@@ -801,59 +786,81 @@ function loadAdsList(){
       bd.textContent='🗑️ حذف';
       bd.style.cssText='flex:1;background:#7f1d1d;color:#fff;border:none;border-radius:7px;padding:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer';
       bd.onclick=(function(k){return function(){deleteAd(k);};})(kid);
-      btns.appendChild(bv);
-      btns.appendChild(bd);
-      div.appendChild(btns);
-      el.appendChild(div);
+      btns.appendChild(bv);btns.appendChild(bd);
+      wrap.appendChild(btns);
+      el.appendChild(wrap);
     });
   });
 }
-
 
 function showAddAd(){
   if(!db){notif('غير متصل');return;}
   db.ref('ads').once('value',function(snap){
     var data=snap.val()||{};
     if(Object.keys(data).length>=5){notif('الحد الأقصى 5 إعلانات');return;}
-    var f=document.getElementById('ad-form');
-    if(!f) return;
-    document.getElementById('ad-form-title').textContent='إضافة إعلان';
+    document.getElementById('ad-form').style.display='block';
     document.getElementById('ad-edit-id').value='';
-
+    document.getElementById('ad-url-inp').value='';
     var pv=document.getElementById('ad-img-preview');
     if(pv){pv.src='';pv.style.display='none';}
+    var msg=document.getElementById('ad-img-msg');
+    if(msg) msg.style.display='none';
     adImgData=null;
-    f.style.display='block';
-    f.scrollIntoView({behavior:'smooth'});
+    document.getElementById('ad-form').scrollIntoView({behavior:'smooth'});
   });
 }
 
-function editAd(kid){
-  if(!db) return;
-  db.ref('ads/'+kid).once('value',function(snap){
-    var a=snap.val()||{};
-    document.getElementById('ad-form-title').textContent='تعديل إعلان';
-    document.getElementById('ad-edit-id').value=kid;
-    document.getElementById('ad-image-url').value=a.url||'';
-    document.getElementById('ad-link').value=a.link||'';
-    var pv=document.getElementById('ad-img-preview');
-    if(a.image){pv.src=a.image;pv.style.display='block';}
-    else pv.style.display='none';
-    adImgData=a.image||null;
-    document.getElementById('ad-form').style.display='block';
-  });
+function previewAd(){
+  var url=document.getElementById('ad-url-inp').value.trim();
+  var msg=document.getElementById('ad-img-msg');
+  var pv=document.getElementById('ad-img-preview');
+  if(!url){
+    if(msg){msg.textContent='❌ أدخل رابط الصورة';msg.style.color='#ef4444';msg.style.display='block';}
+    return;
+  }
+  adImgData=url;
+  if(pv){pv.referrerPolicy='no-referrer';pv.src=url;pv.style.display='block';}
+  if(msg){msg.textContent='✅ اضغط حفظ';msg.style.color='#22c55e';msg.style.display='block';}
 }
 
 function saveAd(){
   if(!db){notif('غير متصل');return;}
-  if(!adImgData){notif('ارفع صورة أولاً');return;}
+  var url=document.getElementById('ad-url-inp').value.trim();
+  if(!url){notif('أضف رابط صورة أولاً');return;}
   var kid=document.getElementById('ad-edit-id').value;
-  var adData={image:adImgData,visible:true,createdAt:Date.now()};
   var ref=kid?db.ref('ads/'+kid):db.ref('ads').push();
-  ref.set(adData,function(err){
-    if(err){notif('خطأ في الحفظ: '+err.message);return;}
+  ref.set({image:url,visible:true,createdAt:Date.now()},function(err){
+    if(err){notif('خطأ: '+err.message);return;}
     notif('تم الحفظ ✅');
     cancelAdForm();
+    setTimeout(loadAdsList,500);
+  });
+}
+
+function cancelAdForm(){
+  document.getElementById('ad-form').style.display='none';
+  adImgData=null;
+  document.getElementById('ad-url-inp').value='';
+  var pv=document.getElementById('ad-img-preview');
+  if(pv){pv.src='';pv.style.display='none';}
+  var msg=document.getElementById('ad-img-msg');
+  if(msg) msg.style.display='none';
+}
+
+function toggleAdVisible(kid,current){
+  if(!db) return;
+  db.ref('ads/'+kid+'/visible').set(current===false?true:false,function(){
+    notif('تم التحديث ✅');
+    setTimeout(loadAdsList,300);
+  });
+}
+
+function deleteAd(kid){
+  if(!confirm('حذف هذا الإعلان؟')) return;
+  if(!db) return;
+  db.ref('ads/'+kid).remove(function(){
+    notif('تم الحذف ✅');
+    setTimeout(loadAdsList,300);
   });
 }
 
