@@ -251,16 +251,22 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction
     <div style="font-size:12px;color:#64748b;margin-bottom:10px">حتى 5 إعلانات — تظهر في تطبيق توصيل الحي تلقائياً</div>
     <div id="ads-list"></div>
     <div id="ad-form" style="display:none;background:#0f172a;border-radius:12px;padding:14px;margin-top:12px;border:1px solid rgba(255,255,255,.1)">
-      <div style="font-size:14px;font-weight:800;color:#C9A84C;margin-bottom:10px" id="ad-form-title">إضافة إعلان</div>
+      <div style="font-size:14px;font-weight:800;color:#C9A84C;margin-bottom:12px" id="ad-form-title">إضافة إعلان</div>
       <input type="hidden" id="ad-edit-id">
-      <label class="f-label">رابط الصورة (URL)</label>
-      <input class="f-input" id="ad-image-url" placeholder="https://example.com/image.jpg" style="margin-bottom:8px">
-      <label class="f-label">أو رفع صورة مباشرة</label>
-      <input type="file" id="ad-image-file" accept="image/*" onchange="handleAdImg(this)" style="margin-bottom:8px;color:#ccc;font-size:12px;width:100%">
-      <img id="ad-img-preview" style="width:100%;border-radius:8px;max-height:130px;object-fit:cover;display:none;margin-bottom:8px">
+      <img id="ad-img-preview" style="width:100%;border-radius:8px;max-height:150px;object-fit:cover;display:none;margin-bottom:10px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <label for="ad-file-device" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;background:rgba(201,168,76,.15);border:1.5px dashed #C9A84C;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:#C9A84C;text-align:center">
+          📁 من الجهاز
+        </label>
+        <label for="ad-file-camera" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;background:rgba(201,168,76,.15);border:1.5px dashed #C9A84C;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:#C9A84C;text-align:center">
+          📷 الاستوديو
+        </label>
+      </div>
+      <input type="file" id="ad-file-device" accept="image/*" onchange="handleAdImg(this)" style="display:none">
+      <input type="file" id="ad-file-camera" accept="image/*" capture="environment" onchange="handleAdImg(this)" style="display:none">
       <div style="display:flex;gap:8px;margin-top:4px">
-        <button onclick="saveAd()" style="flex:1;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">حفظ</button>
-        <button onclick="cancelAdForm()" style="flex:1;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;cursor:pointer">إلغاء</button>
+        <button onclick="saveAd()" style="flex:1;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ</button>
+        <button onclick="cancelAdForm()" style="flex:1;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:11px;font-family:inherit;font-size:13px;cursor:pointer">إلغاء</button>
       </div>
     </div>
   </div>
@@ -696,14 +702,14 @@ function handleAdImg(inp){
     var img=new Image();
     img.onload=function(){
       var c=document.createElement('canvas');
-      var MAX=1200,w=img.width,h=img.height;
+      var MAX=900,w=img.width,h=img.height;
       if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
       c.width=w;c.height=h;
       c.getContext('2d').drawImage(img,0,0,w,h);
-      adImgData=c.toDataURL('image/jpeg',.8);
+      adImgData=c.toDataURL('image/jpeg',.75);
       var pv=document.getElementById('ad-img-preview');
       if(pv){pv.src=adImgData;pv.style.display='block';}
-      document.getElementById('ad-image-url').value='';
     };
     img.src=e.target.result;
   };
@@ -741,7 +747,7 @@ function showAddAd(){
     if(!f) return;
     document.getElementById('ad-form-title').textContent='إضافة إعلان';
     document.getElementById('ad-edit-id').value='';
-    document.getElementById('ad-image-url').value='';
+
     var pv=document.getElementById('ad-img-preview');
     if(pv){pv.src='';pv.style.display='none';}
     adImgData=null;
@@ -767,14 +773,13 @@ function editAd(kid){
 }
 
 function saveAd(){
-  if(!db) return;
-  var urlInput=document.getElementById('ad-image-url').value.trim();
-  var img=adImgData||urlInput;
-  if(!img){notif('أضف صورة أولاً');return;}
+  if(!db){notif('غير متصل');return;}
+  if(!adImgData){notif('اختر صورة أولاً');return;}
   var kid=document.getElementById('ad-edit-id').value;
-  var adData={image:img,link:document.getElementById('ad-link').value.trim()||null,visible:true,createdAt:Date.now()};
+  var adData={image:adImgData,visible:true,createdAt:Date.now()};
   var ref=kid?db.ref('ads/'+kid):db.ref('ads').push();
-  ref.set(adData,function(){
+  ref.set(adData,function(err){
+    if(err){notif('خطأ في الحفظ: '+err.message);return;}
     notif('تم الحفظ ✅');
     cancelAdForm();
   });
@@ -783,6 +788,12 @@ function saveAd(){
 function cancelAdForm(){
   document.getElementById('ad-form').style.display='none';
   adImgData=null;
+  var pv=document.getElementById('ad-img-preview');
+  if(pv){pv.src='';pv.style.display='none';}
+  var df=document.getElementById('ad-file-device');
+  if(df) df.value='';
+  var cf=document.getElementById('ad-file-camera');
+  if(cf) cf.value='';
 }
 
 function toggleAdVisible(kid,current){
