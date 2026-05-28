@@ -731,23 +731,21 @@ function previewAd(){
     if(msg){msg.textContent='❌ أدخل رابط الصورة أولاً';msg.style.color='#ef4444';msg.style.display='block';}
     return;
   }
-  if(msg){msg.textContent='جاري تحميل الصورة...';msg.style.color='#64748b';msg.style.display='block';}
-  var img=new Image();
-  img.crossOrigin='anonymous';
-  img.onload=function(){
-    adImgData=url;
-    if(pv){pv.src=url;pv.style.display='block';}
-    if(msg){msg.textContent='✅ الصورة جاهزة';msg.style.color='#22c55e';}
-    if(btn){btn.disabled=false;btn.style.background='#C9A84C';btn.style.color='#1A0A00';btn.style.cursor='pointer';}
-  };
-  img.onerror=function(){
-    // Try without crossOrigin
-    adImgData=url;
-    if(pv){pv.src=url;pv.style.display='block';}
-    if(msg){msg.textContent='✅ تم — اضغط حفظ';msg.style.color='#22c55e';}
-    if(btn){btn.disabled=false;btn.style.background='#C9A84C';btn.style.color='#1A0A00';btn.style.cursor='pointer';}
-  };
-  img.src=url+'?t='+Date.now();
+  // Accept the URL directly - show it and enable save
+  adImgData=url;
+  if(pv){
+    pv.referrerPolicy='no-referrer';
+    pv.src=url;
+    pv.style.display='block';
+    pv.onerror=function(){
+      pv.style.display='none';
+      if(msg){msg.textContent='⚠️ الصورة قد لا تظهر بسبب إعدادات الموقع لكن يمكن الحفظ';msg.style.color='#f59e0b';msg.style.display='block';}
+    };
+    pv.onload=function(){
+      if(msg){msg.textContent='✅ الصورة جاهزة';msg.style.color='#22c55e';msg.style.display='block';}
+    };
+  }
+  if(btn){btn.disabled=false;btn.style.background='#C9A84C';btn.style.color='#1A0A00';btn.style.cursor='pointer';}
 }
 
 function loadAdsList(){
