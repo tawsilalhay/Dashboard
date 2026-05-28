@@ -249,10 +249,17 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction
       <button onclick="showAddAd()" style="background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:7px 14px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">+ إضافة</button>
     </div>
     <div style="font-size:12px;color:#64748b;margin-bottom:12px">حتى 5 إعلانات — تظهر في تطبيق توصيل الحي تلقائياً</div>
-    <!-- Banner control -->
+    <!-- Header + Banner control -->
     <div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(201,168,76,.3)">
-      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px">🎨 البنر العلوي في توصيل الحي</div>
-      <label class="f-label">السطر الأول (العنوان)</label>
+      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px">📱 رأس التطبيق (الشريط الأخضر العلوي)</div>
+      <label class="f-label">اسم التطبيق</label>
+      <input class="f-input" id="hdr-title" placeholder="توصيل الحي" style="margin-bottom:8px">
+      <label class="f-label">النص الصغير تحته</label>
+      <input class="f-input" id="hdr-sub" placeholder="أطلب من متاجر حيك المفضلة" style="margin-bottom:10px">
+      <button onclick="saveHeader()" style="width:100%;background:#2D5016;color:#fff;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px">💾 حفظ الرأس</button>
+
+      <div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px">🎨 البنر الإعلاني (داخل السلايدر)</div>
+      <label class="f-label">السطر الأول</label>
       <input class="f-input" id="banner-line1" placeholder="توصيل الحي 🛵" style="margin-bottom:8px">
       <label class="f-label">السطر الثاني</label>
       <input class="f-input" id="banner-line2" placeholder="من متاجر حيك مباشرة لبابك" style="margin-bottom:8px">
@@ -260,7 +267,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;direction
       <input class="f-input" id="banner-line3" placeholder="سريع، سهل، وموثوق" style="margin-bottom:8px">
       <label class="f-label">نص الزر</label>
       <input class="f-input" id="banner-badge" placeholder="اطلب الآن" style="margin-bottom:10px">
-      <button onclick="saveBanner()" style="width:100%;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ البنر</button>
+      <button onclick="saveBanner()" style="width:100%;background:#C9A84C;color:#1A0A00;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ البنر</button>
     </div>
     <div id="ads-list"></div>
     <div id="ad-form" style="display:none;background:#0f172a;border-radius:12px;padding:14px;margin-top:12px;border:1px solid rgba(255,255,255,.1)">
@@ -711,22 +718,33 @@ var adImgData=null;
 
 function handleAdImg(inp){
   if(!inp.files||!inp.files[0]) return;
+  var szEl=document.getElementById('ad-img-size');
+  var pv=document.getElementById('ad-img-preview');
+  adImgData=null;
+  if(pv){pv.src='';pv.style.display='none';}
   var r=new FileReader();
   r.onload=function(e){
     var img=new Image();
     img.onload=function(){
       var c=document.createElement('canvas');
-      var MAX=600,w=img.width,h=img.height;
+      // Compress aggressively: max 500px, quality 0.4
+      var MAX=500,w=img.width,h=img.height;
       if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
       if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
       c.width=w;c.height=h;
       c.getContext('2d').drawImage(img,0,0,w,h);
-      adImgData=c.toDataURL('image/jpeg',.5);
-      var sz=Math.round(adImgData.length*3/4/1024);
-      var pv=document.getElementById('ad-img-preview');
-      if(pv){pv.src=adImgData;pv.style.display='block';}
-      var szEl=document.getElementById('ad-img-size');
-      if(szEl) szEl.textContent='حجم الصورة: '+sz+' KB'+(sz>500?' (كبير جداً، قد لا تُحفظ)':'');
+      var data=c.toDataURL('image/jpeg',0.4);
+      var sz=Math.round(data.length*3/4/1024);
+      if(sz>300){
+        // Reject
+        if(szEl){szEl.textContent='❌ الصورة كبيرة جداً ('+sz+' KB) — الحد الأقصى 300 KB. اختر صورة أصغر.';szEl.style.color='#ef4444';}
+        adImgData=null;
+        inp.value='';
+        return;
+      }
+      adImgData=data;
+      if(pv){pv.src=data;pv.style.display='block';}
+      if(szEl){szEl.textContent='✅ الصورة مقبولة ('+sz+' KB)';szEl.style.color='#22c55e';}
     };
     img.src=e.target.result;
   };
@@ -804,6 +822,7 @@ function saveAd(){
 
 function loadDefaultAd(){
   if(!db) return;
+  loadHeader();
   db.ref('banner').once('value',function(snap){
     var d=snap.val()||{};
     var f=document.getElementById('banner-line1');
@@ -814,6 +833,29 @@ function loadDefaultAd(){
     if(s) s.value=d.line2||'من متاجر حيك مباشرة لبابك';
     if(t) t.value=d.line3||'سريع، سهل، وموثوق';
     if(b) b.value=d.badge||'اطلب الآن';
+  });
+}
+
+function loadHeader(){
+  if(!db) return;
+  db.ref('app_header').once('value',function(snap){
+    var d=snap.val()||{};
+    var t=document.getElementById('hdr-title');
+    var s=document.getElementById('hdr-sub');
+    if(t) t.value=d.title||'توصيل الحي';
+    if(s) s.value=d.sub||'أطلب من متاجر حيك المفضلة';
+  });
+}
+
+function saveHeader(){
+  if(!db) return;
+  var d={
+    title:document.getElementById('hdr-title').value.trim()||'توصيل الحي',
+    sub:document.getElementById('hdr-sub').value.trim()||'أطلب من متاجر حيك المفضلة'
+  };
+  db.ref('app_header').set(d,function(err){
+    if(err) notif('خطأ: '+err.message);
+    else notif('تم حفظ الرأس ✅');
   });
 }
 
